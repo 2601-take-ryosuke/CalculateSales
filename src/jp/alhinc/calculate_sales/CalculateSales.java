@@ -67,12 +67,14 @@ public class CalculateSales {
 			String line;
 			// 一行ずつ読み込む
 			while((line = br.readLine()) != null) {
+				final Long INITIAL_BRANCH_SALES = (long) 0;
 				// (処理内容1-2)
 				String[] items = line.split(",");
 				String branchCode = items[0];
 				String branchName = items[1];
+
 				branchNames.put(branchCode, branchName);
-				System.out.println(line);
+				branchSales.put(branchCode, INITIAL_BRANCH_SALES);
 			}
 
 		} catch(IOException e) {
