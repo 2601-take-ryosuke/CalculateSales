@@ -85,6 +85,7 @@ public class CalculateSales {
 			}
 		} catch (Exception e) {
 			System.out.println(UNKNOWN_ERROR);
+			return;
 		}
 
 		// (処理内容2-2) 売上ファイルリスト読み込み処理
@@ -134,6 +135,7 @@ public class CalculateSales {
 
 			} catch (IOException e) {
 				System.out.println(UNKNOWN_ERROR);
+				return;
 			} finally {
 				// ファイルを開いている場合
 				if (br != null) {
@@ -142,6 +144,7 @@ public class CalculateSales {
 						br.close();
 					} catch (IOException e) {
 						System.out.println(UNKNOWN_ERROR);
+						return;
 					}
 				}
 			}
