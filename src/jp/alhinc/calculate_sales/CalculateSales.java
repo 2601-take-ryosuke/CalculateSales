@@ -38,6 +38,8 @@ public class CalculateSales {
 		Map<String, Long> branchSales = new HashMap<>();
 		// 売上ファイルを保持するList
 		ArrayList<File> salesFiles = new ArrayList<File>();
+		// 全売上情報を保持するList
+		ArrayList<String[]> salesInfos = new ArrayList<String[]>();
 
 		// 支店定義ファイル読み込み処理
 		if (!readBranchDifinitionFile(args[0], FILE_NAME_BRANCH_LST, branchNames)) {
@@ -51,10 +53,13 @@ public class CalculateSales {
 
 		// (処理内容2-2) 売上ファイルリスト読み込み処理
 		for (File salesFile : salesFiles) {
-			if (!readSalesFile(salesFile, branchNames, branchSales)) {
+			if (!readSalesFile(salesFile, branchNames, salesInfos)) {
 				return;
 			}
 		}
+
+		// (処理内容2-2) 売上の合計処理
+		amountSales(branchSales, branchNames, salesInfos);
 
 		// 支店別集計ファイル書き込み処理
 		if (!writeFile(args[0], FILE_NAME_BRANCH_OUT, branchNames, branchSales)) {
@@ -139,11 +144,11 @@ public class CalculateSales {
 	 *
 	 * @param 売り上げファイルを保持するList
 	 * @param 支店コードと支店名を保持するMap
-	 * @param 支店コードと売上金額を保持するMap
+	 * @param 全売り上げ情報を保持するList
 	 * @return 読み込み可否
 	 */
 	private static boolean readSalesFile(File salesFile, Map<String, String> branchNames,
-			Map<String, Long> branchSales) {
+			ArrayList<String[]> salesInfos) {
 		BufferedReader br = null;
 
 		try {
@@ -157,23 +162,25 @@ public class CalculateSales {
 				fileContents.add(line);
 			}
 
-			String branchCode = fileContents.get(0);
-			Long fileSale = Long.parseLong(fileContents.get(1));
-
-			// 支店定義ファイルにない支店コードなら合計処理をしない
-			if (!branchNames.containsKey(branchCode)) {
+			// 売り上げファイルの中身が2行以外であれば処理中断
+			if (fileContents.size() != 2) {
 				return false;
 			}
 
-			// 暫定の合計金額を算出
-			Long saleAmount = (long) 0;
-			if (branchSales.containsKey(branchCode)) {
-				saleAmount = branchSales.get(branchCode);
-			}
-			saleAmount += fileSale;
+			String branchCode = fileContents.get(0);
+			String sales = fileContents.get(1);
 
-			// 売り上げの合計金額を更新
-			branchSales.put(branchCode, saleAmount);
+			// 売上金額を保持するMapにない支店コードなら処理中断
+			if (!branchNames.containsKey(branchCode)) {
+				return false;
+			}
+			// 2番目の要素が数値でないなら処理中断
+			if (!sales.matches("^[0-9]+$")) {
+				return false;
+			}
+
+			// 売り上げファイルから取得した情報をリストに追加
+			salesInfos.add(new String[] { branchCode, sales });
 
 		} catch (IOException e) {
 			System.out.println(UNKNOWN_ERROR);
@@ -191,6 +198,33 @@ public class CalculateSales {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * 支店別集計ファイル書き込み処理
+	 *
+	 * @param 支店コードと売上金額を保持するMap
+	 * @param 支店コードと支店名を保持するMap
+	 * @param 全売り上げ情報を保持するList
+	 * @return 書き込み可否
+	 */
+	private static void amountSales(Map<String, Long> branchSales, Map<String, String> branchNames,
+			ArrayList<String[]> salesInfos) {
+
+		// Mapの初期化
+		for (String key : branchNames.keySet()) {
+			branchSales.put(key, (long) 0);
+		}
+
+		// 合計金額を算出
+		for (String[] salesInfo : salesInfos) {
+			String branchCode = salesInfo[0];
+			Long sales = Long.parseLong(salesInfo[1]);
+			Long saleAmount = branchSales.get(branchCode) + sales;
+
+			branchSales.put(branchCode, saleAmount);
+		}
+
 	}
 
 	/**
